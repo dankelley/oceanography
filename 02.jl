@@ -1,4 +1,4 @@
-# Test of plotting
+# Q: why does this work, but fail in the package?
 using Plots
 abstract type Oce end
 struct Ctd <: Oce
