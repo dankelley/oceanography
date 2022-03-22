@@ -24,40 +24,57 @@ struct Ctd <: Oce
 end
 
 """
-    plotProfile(ctd::Ctd; which::String="temperature")
+    plotProfile(ctd::Ctd; which::String="temperature", lon=-30.0, lat=30.0,
+        seriestype=:scatter, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
+        debug::Bool=false)
 
-
-Plot a CTD profile of a specified water property.
+Plot an oceanographic profile for data contained in `ctd`, showing how the
+variable named by `which` depends on pressure.  The variable is drawn on the x
+axis and pressure on the y axis. Pressure increases downwards on the page, and
+the x axis is drawn at the top.  Allowed values of `which` are `"T"` for
+in-situ temperature, `"CT"` for Conservative Temperature, `"S"` for Practical
+Salinity, `"SA"` for Absolute Salinity, or `"sigma0"` for density anomaly
+referenced to the surface. The `seriestype` and other arguments have the same
+meaning as for general julia plots.
 """
-function plotProfile(ctd::Ctd; which::String="temperature")
-    println("in plotProfile(ctd,which=\"$(which)\")")
-    if which == "temperature"
-        plot(ctd.temperature, ctd.pressure,
-             yaxis=:flip,
-             legend=false,
-             xmirror=true,
-             xlabel="Temperature [°C]",
-             ylabel="Pressure [dbar]")
-    elseif which == "salinity"
-        plot(ctd.salinity, ctd.pressure,
-             yaxis=:flip,
-             xmirror=true,
-             legend=false,
-             xlabel="Salinity",
-             ylabel="Pressure [dbar]")
-    elseif which == "sigma0"
-        lon = -30.0 # FIXME
-        lat = 30.0 # FIXME
-        S = ctd.salinity
-        T = ctd.temperature
-        p = ctd.pressure
+function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
+        seriestype=:line, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
+        debug::Bool=false)
+    if debug
+        println("in plotProfile(ctd,which=\"$(which))")
+    end
+    S = ctd.salinity
+    T = ctd.temperature
+    p = ctd.pressure
+    if which == "SA" || which == "CT" || which == "sigma0"
         SA = gsw_sa_from_sp.(S, p, lon, lat)
         CT = gsw_ct_from_t.(SA, T, p)
-        sigma0 = gsw_sigma0.(SA, CT)
-        plot(sigma0, ctd.pressure,
-             yaxis=:flip,
-             xmirror=true,
-             legend=false,
+        if which == "sigma0"
+            sigma0 = gsw_sigma0.(SA, CT)
+        end
+    end
+    if which == "T" || which == "CT"
+        plot(which == "CT" ? CT : T,
+             p,
+             yaxis=:flip, xmirror=true, legend=false,
+             seriestype=seriestype, linewidth=linewidth,
+             markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
+             xlabel=which == "CT" ? "Conservative Temperature [°C]" : "Temperature [°C]",
+             ylabel="Pressure [dbar]")
+    elseif which == "S" || which == "SA"
+        plot(which == "SA" ? SA : S,
+             p,
+             yaxis=:flip, xmirror=true, legend=false,
+             seriestype=seriestype, linewidth=linewidth,
+             markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
+             xlabel=which == "SA" ? "Absolute Salinity [g/kg]" : "Practical Salinity",
+             ylabel="Pressure [dbar]")
+    elseif which == "sigma0" # gsw formulation
+        plot(sigma0,
+             p,
+             yaxis=:flip, xmirror=true, legend=false,
+             seriestype=seriestype, linewidth=linewidth,
+             markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
              xlabel="Potential Density Anomaly, σ₀ [kg/m³]",
              ylabel="Pressure [dbar]")
     else
@@ -67,8 +84,7 @@ end
 
 """
     plotTS(ctd::Ctd, lon=-30.0, lat=30.0,
-           seriestype=:scatter, markerstrokealpha=0.1, markerstrokewidth=0.1,
-           linewidth=1,
+           seriestype=:scatter, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
            drawFreezing=true)
 
 Plot an oceanographic TS diagram, with the Gibbs Seawater equation of state.

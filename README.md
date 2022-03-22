@@ -1,2 +1,2 @@
-This is a *very* preliminary attempt at a library for oceanographic analysis
-using the Julia language.
+This repository holds some tests that might shed light on the utility and
+practicality of creating a Julia package for oceanographic analysis.
