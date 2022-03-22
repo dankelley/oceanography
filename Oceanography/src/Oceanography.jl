@@ -25,7 +25,9 @@ end
 
 """
     plotProfile(ctd::Ctd; which::String="temperature", lon=-30.0, lat=30.0,
-        seriestype=:path, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
+        seriestype=:path,
+        markerstrokealpha=nothing, markerstrokewidth=1, markershape=:none,
+        linewidth=:auto, legend=false,
         debug::Bool=false)
 
 Plot an oceanographic profile for data contained in `ctd`, showing how the
@@ -35,10 +37,11 @@ the x axis is drawn at the top.  Allowed values of `which` are `"T"` for
 in-situ temperature, `"CT"` for Conservative Temperature, `"S"` for Practical
 Salinity, `"SA"` for Absolute Salinity, or `"sigma0"` for density anomaly
 referenced to the surface. The `seriestype` and other arguments have the same
-meaning as for general julia plots.
+meaning as for general julia plots, e.g. using `seriestype=:path` joins the
+data points, and `seriestype=:scatter` shows a symbol at each point.
 """
 function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
-        seriestype=:path, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
+        seriestype=:path, markerstrokealpha=nothing, markerstrokewidth=1, linewidth=:auto,
         debug::Bool=false)
     if debug
         println("in plotProfile(ctd,which=\"$(which))")
@@ -83,19 +86,22 @@ function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
 end
 
 """
-    plotTS(ctd::Ctd, lon=-30.0, lat=30.0,
-           seriestype=:path, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
+    plotTS(ctd::Ctd; lon=-30.0, lat=30.0,
+           seriestype=:path,
+           markerstrokealpha=nothing, markerstrokewidth=1, markershape=:none,
+           linewidth=:auto, legend=false,
            drawFreezing=true)
 
 Plot an oceanographic TS diagram, with the Gibbs Seawater equation of state.
 Contours of σ₀ are shown with dotted lines.  If `drawFreezing` is true, then
-the freezing-point curve is added, with a dashed blue line type.
-
+the freezing-point curve is added, with a dashed blue line type.  The
+`seriestype` and other arguments have the same, e.g. using `seriestype=:path`
+joins the data points, and `seriestype=:scatter` shows a symbol at each point.
 """
 function plotTS(ctd::Ctd; lon=-30.0, lat=30.0,
-        seriestype=:path, markerstrokealpha=0.1, markerstrokewidth=0.1,
-        linewidth=1,
-        legend=false,
+        seriestype=:path,
+        markerstrokealpha=nothing, markerstrokewidth=1, markershape=:none,
+        linewidth=:auto, legend=false,
         drawFreezing=true)
     println("in plotTS(ctd)")
     S = ctd.salinity

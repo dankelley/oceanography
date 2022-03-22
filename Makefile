@@ -1,3 +1,8 @@
-04_plot_problem.out: 04_plot_problem.jl
-	julia $< > $@
+all: $(patsubst %.jl,%.out,$(wildcard *.jl))
+%.out: %.jl
+	julia $< &> $@
+clean:
+	-rm *~ *png *.out *pdf
+view:
+	open *.png
 

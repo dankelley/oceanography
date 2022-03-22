@@ -16,26 +16,26 @@ lat = 30.0
 SA = gsw_sa_from_sp.(S, p, lon, lat)
 CT = gsw_ct_from_t.(SA, T, p)
 plot(SA, p, yaxis=:flip, xmirror=true, legend=false)
-savefig("04_SA_profile_by_hand.pdf")
+savefig("05_SA_profile_by_hand.pdf")
 
 plotProfile(ctd) # defaults to CT
-savefig("04_profile_CT.pdf")
+savefig("05_profile_CT.pdf")
 
 plotProfile(ctd; which="S")
-savefig("04_profile_S.pdf")
+savefig("05_profile_S.pdf")
 
 plotProfile(ctd; which="S", seriestype=:scatter)
-savefig("04_profile_S_scatter.pdf")
+savefig("05_profile_S_scatter.pdf")
 
 plotProfile(ctd; which="SA")
-savefig("04_profile_SA.pdf")
+savefig("05_profile_SA.pdf")
 
 plotProfile(ctd; which="SA", seriestype=:scatter)
-savefig("04_profile_SA_scatter.pdf")
+savefig("05_profile_SA_scatter.pdf")
 
 plotProfile(ctd; which="sigma0")
-savefig("04profile__sigma0.pdf")
+savefig("05profile__sigma0.pdf")
 
 plotTS(ctd)
-savefig("04_TS.pdf")
+savefig("05_TS.pdf")
 

@@ -1,6 +1,7 @@
+*.png
 *out
 *~
 *swp
 *.pdf
-
 .DS_Store
+
