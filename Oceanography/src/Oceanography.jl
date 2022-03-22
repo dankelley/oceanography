@@ -25,7 +25,7 @@ end
 
 """
     plotProfile(ctd::Ctd; which::String="temperature", lon=-30.0, lat=30.0,
-        seriestype=:scatter, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
+        seriestype=:path, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
         debug::Bool=false)
 
 Plot an oceanographic profile for data contained in `ctd`, showing how the
@@ -38,7 +38,7 @@ referenced to the surface. The `seriestype` and other arguments have the same
 meaning as for general julia plots.
 """
 function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
-        seriestype=:line, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
+        seriestype=:path, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
         debug::Bool=false)
     if debug
         println("in plotProfile(ctd,which=\"$(which))")
@@ -84,7 +84,7 @@ end
 
 """
     plotTS(ctd::Ctd, lon=-30.0, lat=30.0,
-           seriestype=:scatter, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
+           seriestype=:path, markerstrokealpha=0.1, markerstrokewidth=0.1, linewidth=1,
            drawFreezing=true)
 
 Plot an oceanographic TS diagram, with the Gibbs Seawater equation of state.
@@ -93,7 +93,7 @@ the freezing-point curve is added, with a dashed blue line type.
 
 """
 function plotTS(ctd::Ctd; lon=-30.0, lat=30.0,
-        seriestype=:scatter, markerstrokealpha=0.1, markerstrokewidth=0.1,
+        seriestype=:path, markerstrokealpha=0.1, markerstrokewidth=0.1,
         linewidth=1,
         legend=false,
         drawFreezing=true)

@@ -12,3 +12,4 @@ p1 = plot(S, p, yaxis=:flip, xmirror=true, legend=false)
 p2 = plotProfile(ctd; which="S")
 plot(p1, p2)
 savefig("04_plot_problem.png")
+
