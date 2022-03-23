@@ -3,15 +3,11 @@ module Oceanography
 using GibbsSeaWater
 using Plots
 using CSV
-#import RecipesBase
 
 export Oce
 export Ctd
 export plotProfile
 export plotTS
-
-#export RecipesBase.plot
-#export plot
 
 abstract type
     Oce
@@ -21,10 +17,19 @@ struct Ctd <: Oce
     salinity::Vector{Float64}
     temperature::Vector{Float64}
     pressure::Vector{Float64}
+    longitude::Float64
+    latitude::Float64
+end
+
+# Convenience function, defaulting to a mid-Atlantic location.
+function Ctd(salinity::Vector{Float64},
+        temperature::Vector{Float64},
+        pressure::Vector{Float64})
+    Ctd(salinity, temperature, pressure, -30.0, 30.0)
 end
 
 """
-    plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
+    plotProfile(ctd::Ctd; which::String="CT",
         legend=false, debug::Bool=false, kwargs...)
 
 Plot an oceanographic profile for data contained in `ctd`, showing how the
@@ -46,8 +51,7 @@ constructed with a blue line connecting points, but using e.g.
 will use red-filled circles, instead; see https://docs.juliaplots.org/stable/ for
 more on such issues.
 """
-function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
-        legend=false, debug::Bool=false, kwargs...)
+function plotProfile(ctd::Ctd; which::String="CT", legend=false, debug::Bool=false, kwargs...)
     if debug
         println("in plotProfile(ctd,which=\"$(which)\")")
     end
@@ -55,7 +59,7 @@ function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
     T = ctd.temperature
     p = ctd.pressure
     if which == "SA" || which == "CT" || which == "sigma0"
-        SA = gsw_sa_from_sp.(S, p, lon, lat)
+        SA = gsw_sa_from_sp.(S, p, ctd.longitude, ctd.latitude)
         CT = gsw_ct_from_t.(SA, T, p)
         if which == "sigma0"
             sigma0 = gsw_sigma0.(SA, CT)
@@ -65,8 +69,6 @@ function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
         plot(which == "CT" ? CT : T,
              p,
              yaxis=:flip, xmirror=true, legend=false,
-             #seriestype=seriestype, linewidth=linewidth,
-             #markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
              xlabel=which == "CT" ? "Conservative Temperature [°C]" : "Temperature [°C]",
              ylabel="Pressure [dbar]";
              kwargs...)
@@ -74,8 +76,6 @@ function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
         plot(which == "SA" ? SA : S,
              p,
              yaxis=:flip, xmirror=true, legend=false,
-             #seriestype=seriestype, linewidth=linewidth,
-             #markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
              xlabel=which == "SA" ? "Absolute Salinity [g/kg]" : "Practical Salinity",
              ylabel="Pressure [dbar]";
              kwargs...)
@@ -83,8 +83,6 @@ function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
         plot(sigma0,
              p,
              yaxis=:flip, xmirror=true, legend=false,
-             #seriestype=seriestype, linewidth=linewidth,
-             #markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
              xlabel="Potential Density Anomaly, σ₀ [kg/m³]",
              ylabel="Pressure [dbar]",
              kwargs...)
@@ -94,7 +92,7 @@ function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
 end
 
 """
-    plotTS(ctd::Ctd; lon=-30.0, lat=30.0,
+    plotTS(ctd::Ctd;
         drawFreezing=true, legend=false, debug::Bool=false, kwargs...,)
 
 Plot an oceanographic TS diagram, with the Gibbs Seawater equation of state.
@@ -110,15 +108,14 @@ constructed with a blue line connecting TS values, but using e.g.
 will use red-filled circles, instead; see https://docs.juliaplots.org/stable/ for
 more on such issues.
 """
-function plotTS(ctd::Ctd; lon=-30.0, lat=30.0,
-        drawFreezing=true, legend=false, debug::Bool=false, kwargs...)
+function plotTS(ctd::Ctd; drawFreezing=true, legend=false, debug::Bool=false, kwargs...)
     if debug
         println("in plotTS(ctd)")
     end
     S = ctd.salinity
     T = ctd.temperature
     p = ctd.pressure
-    SA = gsw_sa_from_sp.(S, p, lon, lat)
+    SA = gsw_sa_from_sp.(S, p, ctd.longitude, ctd.latitude)
     CT = gsw_ct_from_t.(SA, T, p)
     xlim = [minimum(SA) maximum(SA)]
     ylim = [minimum(CT) maximum(CT)]
@@ -130,15 +127,13 @@ function plotTS(ctd::Ctd; lon=-30.0, lat=30.0,
         CTf = gsw_ct_freezing.(SAf, pf, saturation_fraction)
         ylim[1] = minimum([minimum(CTf) minimum(CT)])
     end
+    # Data
     plot(SA, CT, legend=legend,
-         #seriestype=seriestype,
-         #markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
-         #linewidth=linewidth,
          xlim=xlim, ylim=ylim,
          xlabel="Absolute Salinity [g/kg]",
          ylabel="Conservative Temperature [°C]";
          kwargs...)
-    # Density contours
+    # Density contours on 300x300 grid
     SAc = range(xlim[1], xlim[2], length=300)
     CTc = range(ylim[1], ylim[2], length=300)
     contour!(SAc, CTc, (SAc,CTc)->gsw_sigma0(SAc,CTc),
