@@ -24,18 +24,21 @@ savefig("05_profile_CT.pdf")
 plotProfile(ctd; which="S")
 savefig("05_profile_S.pdf")
 
-plotProfile(ctd; which="S", seriestype=:scatter)
+plotProfile(ctd, which="S", seriestype=:scatter)
 savefig("05_profile_S_scatter.pdf")
 
-plotProfile(ctd; which="SA")
+plotProfile(ctd, which="SA")
 savefig("05_profile_SA.pdf")
 
-plotProfile(ctd; which="SA", seriestype=:scatter)
+plotProfile(ctd, which="SA", seriestype=:scatter)
 savefig("05_profile_SA_scatter.pdf")
 
-plotProfile(ctd; which="sigma0")
+plotProfile(ctd, which="sigma0")
 savefig("05profile__sigma0.pdf")
 
 plotTS(ctd)
-savefig("05_TS.pdf")
+savefig("05_TS_lines.pdf")
+
+plotTS(ctd, seriestype=:scatter)
+savefig("05_TS_scatter.pdf")
 

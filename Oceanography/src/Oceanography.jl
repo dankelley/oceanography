@@ -24,11 +24,8 @@ struct Ctd <: Oce
 end
 
 """
-    plotProfile(ctd::Ctd; which::String="temperature", lon=-30.0, lat=30.0,
-        seriestype=:path,
-        markerstrokealpha=nothing, markerstrokewidth=1, markershape=:none,
-        linewidth=:auto, legend=false,
-        debug::Bool=false)
+    plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
+        legend=false, debug::Bool=false, kwargs...)
 
 Plot an oceanographic profile for data contained in `ctd`, showing how the
 variable named by `which` depends on pressure.  The variable is drawn on the x
@@ -39,12 +36,20 @@ Salinity, `"SA"` for Absolute Salinity, or `"sigma0"` for density anomaly
 referenced to the surface. The `seriestype` and other arguments have the same
 meaning as for general julia plots, e.g. using `seriestype=:path` joins the
 data points, and `seriestype=:scatter` shows a symbol at each point.
+
+The `kwargs...` argument is used to represent other arguments that will be sent
+to `plot()`.  For example, the default way to display the profile diagram is
+constructed with a blue line connecting points, but using e.g.
+
+    plotProfile(ctd, seriestype=:scatter, seriescolor=:red)
+
+will use red-filled circles, instead; see https://docs.juliaplots.org/stable/ for
+more on such issues.
 """
 function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
-        seriestype=:path, markerstrokealpha=nothing, markerstrokewidth=1, linewidth=:auto,
-        debug::Bool=false)
+        legend=false, debug::Bool=false, kwargs...)
     if debug
-        println("in plotProfile(ctd,which=\"$(which))")
+        println("in plotProfile(ctd,which=\"$(which)\")")
     end
     S = ctd.salinity
     T = ctd.temperature
@@ -60,50 +65,56 @@ function plotProfile(ctd::Ctd; which::String="CT", lon=-30.0, lat=30.0,
         plot(which == "CT" ? CT : T,
              p,
              yaxis=:flip, xmirror=true, legend=false,
-             seriestype=seriestype, linewidth=linewidth,
-             markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
+             #seriestype=seriestype, linewidth=linewidth,
+             #markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
              xlabel=which == "CT" ? "Conservative Temperature [°C]" : "Temperature [°C]",
-             ylabel="Pressure [dbar]")
+             ylabel="Pressure [dbar]";
+             kwargs...)
     elseif which == "S" || which == "SA"
         plot(which == "SA" ? SA : S,
              p,
              yaxis=:flip, xmirror=true, legend=false,
-             seriestype=seriestype, linewidth=linewidth,
-             markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
+             #seriestype=seriestype, linewidth=linewidth,
+             #markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
              xlabel=which == "SA" ? "Absolute Salinity [g/kg]" : "Practical Salinity",
-             ylabel="Pressure [dbar]")
+             ylabel="Pressure [dbar]";
+             kwargs...)
     elseif which == "sigma0" # gsw formulation
         plot(sigma0,
              p,
              yaxis=:flip, xmirror=true, legend=false,
-             seriestype=seriestype, linewidth=linewidth,
-             markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
+             #seriestype=seriestype, linewidth=linewidth,
+             #markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
              xlabel="Potential Density Anomaly, σ₀ [kg/m³]",
-             ylabel="Pressure [dbar]")
+             ylabel="Pressure [dbar]",
+             kwargs...)
     else
-        println("unrecognized 'which'")
+        println("Unrecognized 'which'. Try 'T', 'CT', 'S', 'SA' or 'sigma0'.")
     end
 end
 
 """
     plotTS(ctd::Ctd; lon=-30.0, lat=30.0,
-           seriestype=:path,
-           markerstrokealpha=nothing, markerstrokewidth=1, markershape=:none,
-           linewidth=:auto, legend=false,
-           drawFreezing=true)
+        drawFreezing=true, legend=false, debug::Bool=false, kwargs...,)
 
 Plot an oceanographic TS diagram, with the Gibbs Seawater equation of state.
 Contours of σ₀ are shown with dotted lines.  If `drawFreezing` is true, then
-the freezing-point curve is added, with a dashed blue line type.  The
-`seriestype` and other arguments have the same, e.g. using `seriestype=:path`
-joins the data points, and `seriestype=:scatter` shows a symbol at each point.
+the freezing-point curve is added, with a dashed blue line type.
+
+The `kwargs...` argument is used to represent other arguments that will be sent
+to `plot()`.  For example, the default way to display the TS diagram is
+constructed with a blue line connecting TS values, but using e.g.
+
+    plotProfile(ctd, seriestype=:scatter, seriescolor=:red)
+
+will use red-filled circles, instead; see https://docs.juliaplots.org/stable/ for
+more on such issues.
 """
 function plotTS(ctd::Ctd; lon=-30.0, lat=30.0,
-        seriestype=:path,
-        markerstrokealpha=nothing, markerstrokewidth=1, markershape=:none,
-        linewidth=:auto, legend=false,
-        drawFreezing=true)
-    println("in plotTS(ctd)")
+        drawFreezing=true, legend=false, debug::Bool=false, kwargs...)
+    if debug
+        println("in plotTS(ctd)")
+    end
     S = ctd.salinity
     T = ctd.temperature
     p = ctd.pressure
@@ -120,20 +131,21 @@ function plotTS(ctd::Ctd; lon=-30.0, lat=30.0,
         ylim[1] = minimum([minimum(CTf) minimum(CT)])
     end
     plot(SA, CT, legend=legend,
-         seriestype=seriestype,
-         markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
-         linewidth=linewidth,
+         #seriestype=seriestype,
+         #markerstrokealpha=markerstrokealpha, markerstrokewidth=markerstrokewidth,
+         #linewidth=linewidth,
          xlim=xlim, ylim=ylim,
          xlabel="Absolute Salinity [g/kg]",
-         ylabel="Conservative Temperature [°C]")
+         ylabel="Conservative Temperature [°C]";
+         kwargs...)
     # Density contours
     SAc = range(xlim[1], xlim[2], length=300)
     CTc = range(ylim[1], ylim[2], length=300)
     contour!(SAc, CTc, (SAc,CTc)->gsw_sigma0(SAc,CTc),
-             linewidth=linewidth, linestyle=:dot, color=:black)
+             linestyle=:dot, color=:black)
     # Finally add freezing curve, if requested
     if drawFreezing
-        plot!(SAf, CTf, color=:blue, linewidth=linewidth, linestyle=:dash)
+        plot!(SAf, CTf, color=:blue, linewidth=1, linestyle=:dash)
     end
 end
 
