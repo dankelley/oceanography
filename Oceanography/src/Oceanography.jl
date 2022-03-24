@@ -87,6 +87,8 @@ constructed with a blue line connecting points, but using e.g.
 
 will use red-filled circles, instead; see https://docs.juliaplots.org/stable/ for
 more on such issues.
+
+See also [`plotTS`](@ref).
 """
 function plotProfile(ctd::Ctd; which::String="CT", legend=false, debug::Bool=false, kwargs...)
     if debug
@@ -143,6 +145,8 @@ constructed with a blue line connecting TS values, but using e.g.
 
 will use red-filled circles, instead; see https://docs.juliaplots.org/stable/ for
 more on such issues.
+
+See also [`plotProfile`](@ref).
 """
 function plotTS(ctd::Ctd; drawFreezing=true, legend=false, debug::Bool=false, kwargs...)
     if debug
@@ -181,19 +185,22 @@ function plotTS(ctd::Ctd; drawFreezing=true, legend=false, debug::Bool=false, kw
 end
 
 """
-    T90fromT68(temperature::Float64)
+    T90 = T90fromT68(T68::Float64)
 
-Convert temperature from T68 form to T90 form.
+Convert a temperature from the T68 scale to the T90 scale.
+
+See also [`T90fromT48`](@ref).
+"""
+T90fromT68(T48::Float64) = T48 / 1.00024
 
 """
-T90fromT68(temperature::Float64) = temperature / 1.00024
+    T90 = T90fromT48(T48::Float64)
 
-"""
-    T90fromT48(temperature::Float64)
+Convert a temperature from the T48 scale to the T90 scale.
 
-Convert temperature from T48 form to T90 form.
+See also [`T90fromT68`](@ref).
 """
-T90fromT48(temperature::Float64) = (temperature-4.4e-6*temperature * (100.0-temperature))/1.00024
+T90fromT48(T68::Float64) = (T68-4.4e-6*T68*(100.0-T68))/1.00024
 
 
 end # module Oceanography
