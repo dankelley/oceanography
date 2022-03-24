@@ -1,13 +1,20 @@
 module Oceanography
 
+using DataFrames
 using GibbsSeaWater
 using Plots
 using CSV
 
+# Structs
 export Oce
 export Ctd
+
+# Functions
+export coordinateFromString
 export plotProfile
 export plotTS
+export T90fromT48
+export T90fromT68
 
 abstract type
     Oce
@@ -20,6 +27,35 @@ struct Ctd <: Oce
     longitude::Float64
     latitude::Float64
 end
+
+"""
+    degree = coordinateFromString(s::String)
+
+Try to extract a longitude or latitude from a string. If there are two
+(space-separated) tokens in the string, the first is taken as the decimal
+degrees, and the second as decimal minutes. The goal is to parse hand-entered
+strings, which might contain letters like `"W"` and `"S"` (or the same
+in lower case) to indicate the hemisphere. Humans are quite good at writing
+confusing strings, so this function is not always helpful.
+
+# examples
+coordinateFromString("1.5")   # 1.5
+coordinateFromString("1 30")  # 1.5
+coordinateFromString("1S 30") # -1.5
+"""
+function coordinateFromString(s::String)
+    sign = occursin(r"[wWsS]", s) ? -1.0 : 1.0
+    s = replace(s, r"[nNsSeEwW]" => "")
+    tokens = split(s)
+    if length(tokens) == 1
+        return sign * parse(Float64, s)
+    elseif length(tokens) == 2
+        return sign * (parse(Float64, tokens[1]) + parse(Float64, tokens[2]) / 60.0)
+    else
+        error("malformed coordinate string $(s)")
+    end
+end
+
 
 # Convenience function, defaulting to a mid-Atlantic location.
 function Ctd(salinity::Vector{Float64},
@@ -87,7 +123,7 @@ function plotProfile(ctd::Ctd; which::String="CT", legend=false, debug::Bool=fal
              ylabel="Pressure [dbar]",
              kwargs...)
     else
-        println("Unrecognized 'which'. Try 'T', 'CT', 'S', 'SA' or 'sigma0'.")
+        println("Unrecognized 'which'='$(which). Try 'T', 'CT', 'S', 'SA' or 'sigma0'.")
     end
 end
 
@@ -143,5 +179,21 @@ function plotTS(ctd::Ctd; drawFreezing=true, legend=false, debug::Bool=false, kw
         plot!(SAf, CTf, color=:blue, linewidth=1, linestyle=:dash)
     end
 end
+
+"""
+    T90fromT68(temperature::Float64)
+
+Convert temperature from T68 form to T90 form.
+
+"""
+T90fromT68(temperature::Float64) = temperature / 1.00024
+
+"""
+    T90fromT48(temperature::Float64)
+
+Convert temperature from T48 form to T90 form.
+"""
+T90fromT48(temperature::Float64) = (temperature-4.4e-6*temperature * (100.0-temperature))/1.00024
+
 
 end # module Oceanography
