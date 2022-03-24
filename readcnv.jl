@@ -13,12 +13,34 @@ using DataFrames,Oceanography,Plots
 """
 header, metadata, data = readCtdCnv(filename)
 
-Read a CTD file named `filename` that is in SeaBird CNV format.
+Read a CTD file named `filename` that is in SeaBird CNV format. This returns
+`header` (a vector of strings, one per line from the start down to a line
+containing `#END`), `metadata` (a Dict with some items scanned from the header)
+and `data` (a `dataFrame` holding the data). Note that the column names in
+`data` are taken from the CNV file, so the user will need to have some
+familiarity with the SeaBird conventions; for example, notice how a temperature
+is converted from the T68 scale to the T90 scale, which is required by other
+oceanographic software, especially the `gsw` package.
 
 **FIXME:** parse the header, first with just column names but eventually
 (perhaps ... but this is *very* labourious, as we know from R/oce) with
 translated names, units, etc.
 
+# Examples
+```julia-repl
+header, metadata, data = readCtdCnv("ctd.cnv")
+ctd = Ctd(data.sal00,
+    T90fromT68.(data.t068),
+    data.pr,
+    metadata["longitude"],
+    metadata["latitude"])
+plotProfile(ctd, which="SA")
+savefig("readcnv_profile_SA.pdf")
+plotProfile(ctd, which="CT")
+savefig("readcnv_profile_CT.pdf")
+plotTS(ctd, which="TS")
+savefig("readcnv_TS.pdf")
+```
 """
 function readCtdCnv(filename::String, debug::Bool=false)
     open(filename) do file
@@ -85,10 +107,6 @@ function readCtdCnv(stream::IOStream, debug::Bool=false)
 end
 
 header, metadata, data = readCtdCnv("ctd.cnv")
-#println(header)
-#println(metadata)
-#println(data)
-
 ctd = Ctd(data.sal00, data.t068, data.pr, metadata["longitude"], metadata["latitude"])
 plotProfile(ctd, which="SA")
 savefig("readcnv_profile_SA.pdf")
