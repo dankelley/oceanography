@@ -30,7 +30,7 @@ translated names, units, etc.
 ```julia-repl
 header, metadata, data = readCtdCnv("ctd.cnv")
 ctd = Ctd(data.sal00,
-    T90fromT68.(data.t068),
+    T90fromT68(data.t068),
     data.pr,
     metadata["longitude"],
     metadata["latitude"])
