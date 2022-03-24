@@ -38,10 +38,12 @@ strings, which might contain letters like `"W"` and `"S"` (or the same
 in lower case) to indicate the hemisphere. Humans are quite good at writing
 confusing strings, so this function is not always helpful.
 
-# examples
+# Examples
+```julia-repl
 coordinateFromString("1.5")   # 1.5
 coordinateFromString("1 30")  # 1.5
 coordinateFromString("1S 30") # -1.5
+```
 """
 function coordinateFromString(s::String)
     sign = occursin(r"[wWsS]", s) ? -1.0 : 1.0
@@ -65,8 +67,7 @@ function Ctd(salinity::Vector{Float64},
 end
 
 """
-    plotProfile(ctd::Ctd; which::String="CT",
-        legend=false, debug::Bool=false, kwargs...)
+    plotProfile(ctd::Ctd; which::String="CT", legend=false, debug::Bool=false, kwargs...)
 
 Plot an oceanographic profile for data contained in `ctd`, showing how the
 variable named by `which` depends on pressure.  The variable is drawn on the x
@@ -128,8 +129,7 @@ function plotProfile(ctd::Ctd; which::String="CT", legend=false, debug::Bool=fal
 end
 
 """
-    plotTS(ctd::Ctd;
-        drawFreezing=true, legend=false, debug::Bool=false, kwargs...,)
+    plotTS(ctd::Ctd; drawFreezing=true, legend=false, debug::Bool=false, kwargs...,)
 
 Plot an oceanographic TS diagram, with the Gibbs Seawater equation of state.
 Contours of σ₀ are shown with dotted lines.  If `drawFreezing` is true, then
@@ -139,7 +139,7 @@ The `kwargs...` argument is used to represent other arguments that will be sent
 to `plot()`.  For example, the default way to display the TS diagram is
 constructed with a blue line connecting TS values, but using e.g.
 
-    plotProfile(ctd, seriestype=:scatter, seriescolor=:red)
+    plotTS(ctd, seriestype=:scatter, seriescolor=:red)
 
 will use red-filled circles, instead; see https://docs.juliaplots.org/stable/ for
 more on such issues.

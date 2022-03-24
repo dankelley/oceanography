@@ -1,7 +1,7 @@
 using Oceanography
 using Test
 
-@testset "Oceanography.jjl" begin
+@testset "coordinateFromString.jl" begin
     @test coordinateFromString("1.5") == 1.5
     @test coordinateFromString("1.5n") == 1.5
     @test coordinateFromString("n1.5") == 1.5
