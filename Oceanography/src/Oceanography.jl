@@ -192,6 +192,7 @@ Convert a temperature from the T68 scale to the T90 scale.
 See also [`T90fromT48`](@ref).
 """
 T90fromT68(T48::Float64) = T48 / 1.00024
+T90fromT68(T48::Vector{Float64}) = T48 ./ 1.00024
 
 """
     T90 = T90fromT48(T48::Float64)
@@ -200,7 +201,8 @@ Convert a temperature from the T48 scale to the T90 scale.
 
 See also [`T90fromT68`](@ref).
 """
-T90fromT48(T68::Float64) = (T68-4.4e-6*T68*(100.0-T68))/1.00024
+T90fromT48(T48::Float64) = (T48-4.4e-6*T48*(100.0-T48))/1.00024
+T90fromT48(T48::Vector{Float64}) = (T48.-4.4e-6.*T48.*(100.0.-T48))./1.00024
 
 
 end # module Oceanography
