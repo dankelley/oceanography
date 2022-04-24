@@ -8,6 +8,7 @@ using CSV
 # Structs
 export Oce
 export Ctd
+export Argo
 
 # Functions
 export coordinateFromString
@@ -28,6 +29,11 @@ struct Ctd <: Oce
     longitude::Float64
     latitude::Float64
 end
+
+#struct Argo <: Ctd
+#    ID::String
+#    cycle::String
+#end
 
 """
     degree = coordinateFromString(s::String)
