@@ -27,15 +27,15 @@ println("u: $(adp.data["u"])")
 #    println("in plotProfile")
 #end
 
-ctd = Ctd() # could also use Ctd(Dict(), Dict())
-ctd.metadata["filename"] = "some_file.cnv"
-ctd.data["pressure"] = range(0.0, 20.0, length=10)
-ctd.data["temperature"] = range(10.0, 5.0, length=10)
-ctd.data["salinity"] = range(30.0, 35.0, length=10)
-println("filename: $(ctd.metadata["filename"])")
-println("pressure: $(ctd.data["pressure"])")
-println("data: $(ctd.data)")
-plotProfile(ctd)
+#ctd = Ctd() # could also use Ctd(Dict(), Dict())
+#ctd.metadata["filename"] = "some_file.cnv"
+#ctd.data["pressure"] = range(0.0, 20.0, length=10)
+#ctd.data["temperature"] = range(10.0, 5.0, length=10)
+#ctd.data["salinity"] = range(30.0, 35.0, length=10)
+#println("filename: $(ctd.metadata["filename"])")
+#println("pressure: $(ctd.data["pressure"])")
+#println("data: $(ctd.data)")
+#plotProfile(ctd)
 
-ctd.metadata["filename"] = "NEWsome_file.cnv"
-println("after mods, filename: $(ctd.metadata["filename"])")
+#ctd.metadata["filename"] = "NEWsome_file.cnv"
+#println("after mods, filename: $(ctd.metadata["filename"])")
