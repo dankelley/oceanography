@@ -1,5 +1,6 @@
 module Oceanography
 
+using NCDatasets
 using DataFrames
 using GibbsSeaWater
 using Plots
@@ -8,19 +9,18 @@ using CSV
 # Structs
 export Oce
 export Ctd
-export Argo
+#. export Argo
 
 # Functions
 export coordinateFromString
 export plotProfile
 export plotTS
+export readArgo
 export readCtdCNV
 export T90fromT48
 export T90fromT68
 
-abstract type
-    Oce
-end
+abstract type Oce end
 
 struct Ctd <: Oce
     salinity::Vector{Float64}
@@ -30,10 +30,9 @@ struct Ctd <: Oce
     latitude::Float64
 end
 
-#struct Argo <: Ctd
-#    ID::String
-#    cycle::String
-#end
+#.struct Argo <: Ctd
+#.    filename::String
+#.end
 
 """
     degree = coordinateFromString(s::String)
@@ -67,9 +66,7 @@ end
 
 
 # Convenience function, defaulting to a mid-Atlantic location.
-function Ctd(salinity::Vector{Float64},
-        temperature::Vector{Float64},
-        pressure::Vector{Float64})
+function Ctd(salinity::Vector{Float64}, temperature::Vector{Float64}, pressure::Vector{Float64})
     Ctd(salinity, temperature, pressure, -30.0, 30.0)
 end
 
@@ -113,25 +110,25 @@ function plotProfile(ctd::Ctd; which::String="CT", legend=false, debug::Bool=fal
     end
     if which == "T" || which == "CT"
         plot(which == "CT" ? CT : T,
-             p,
-             yaxis=:flip, xmirror=true, legend=false,
-             xlabel=which == "CT" ? "Conservative Temperature [°C]" : "Temperature [°C]",
-             ylabel="Pressure [dbar]";
-             kwargs...)
+            p,
+            yaxis=:flip, xmirror=true, legend=legend,
+            xlabel=which == "CT" ? "Conservative Temperature [°C]" : "Temperature [°C]",
+            ylabel="Pressure [dbar]",
+            kwargs...)
     elseif which == "S" || which == "SA"
         plot(which == "SA" ? SA : S,
-             p,
-             yaxis=:flip, xmirror=true, legend=false,
-             xlabel=which == "SA" ? "Absolute Salinity [g/kg]" : "Practical Salinity",
-             ylabel="Pressure [dbar]";
-             kwargs...)
+            p,
+            yaxis=:flip, xmirror=true, legend=false,
+            xlabel=which == "SA" ? "Absolute Salinity [g/kg]" : "Practical Salinity",
+            ylabel="Pressure [dbar]";
+            kwargs...)
     elseif which == "sigma0" # gsw formulation
         plot(sigma0,
-             p,
-             yaxis=:flip, xmirror=true, legend=false,
-             xlabel="Potential Density Anomaly, σ₀ [kg/m³]",
-             ylabel="Pressure [dbar]",
-             kwargs...)
+            p,
+            yaxis=:flip, xmirror=true, legend=false,
+            xlabel="Potential Density Anomaly, σ₀ [kg/m³]",
+            ylabel="Pressure [dbar]",
+            kwargs...)
     else
         println("Unrecognized 'which'='$(which). Try 'T', 'CT', 'S', 'SA' or 'sigma0'.")
     end
@@ -165,7 +162,15 @@ function plotTS(ctd::Ctd; drawFreezing=true, legend=false, debug::Bool=false, kw
     SA = gsw_sa_from_sp.(S, p, ctd.longitude, ctd.latitude)
     CT = gsw_ct_from_t.(SA, T, p)
     xlim = [minimum(SA) maximum(SA)]
+    #xlim = (minimum(SA), maximum(SA))
     ylim = [minimum(CT) maximum(CT)]
+    if debug
+        println("next is xlim (1339h)")
+        println(xlim)
+        println("next is ylim (1339h)")
+        println(ylim)
+    end
+    #ylim = (minimum(CT), maximum(CT))
     # Must alter ylim if drawing a freezing-point curve
     if drawFreezing
         pf = 0.0
@@ -176,20 +181,38 @@ function plotTS(ctd::Ctd; drawFreezing=true, legend=false, debug::Bool=false, kw
     end
     # Data
     plot(SA, CT, legend=legend,
-         xlim=xlim, ylim=ylim,
-         xlabel="Absolute Salinity [g/kg]",
-         ylabel="Conservative Temperature [°C]";
-         kwargs...)
+        xlim=(xlim[1], xlim[2]), ylim=(ylim[1], ylim[2]),
+        xlabel="Absolute Salinity [g/kg]",
+        ylabel="Conservative Temperature [°C]";
+        kwargs...)
     # Density contours on 300x300 grid
     SAc = range(xlim[1], xlim[2], length=300)
     CTc = range(ylim[1], ylim[2], length=300)
-    contour!(SAc, CTc, (SAc,CTc)->gsw_sigma0(SAc,CTc),
-             linestyle=:dot, color=:black)
+    contour!(SAc, CTc, (SAc, CTc) -> gsw_sigma0(SAc, CTc),
+        linestyle=:dot, color=:black)
     # Finally add freezing curve, if requested
     if drawFreezing
         plot!(SAf, CTf, color=:blue, linewidth=1, linestyle=:dash)
     end
 end
+
+"""
+argo = readArgo(filename, column=1, pmax=10000)
+
+FIXME: document, likely alter code (pmax maybe missing as default); read other vars
+"""
+function readArgo(filename, column=1, pmax=10000)
+    d = NCDataset(filename, "r")
+    p = d["PRES"][:, column]
+    look = p .< pmax
+    p = p[look]
+    S = d["PSAL"][look, column]
+    T = d["TEMP"][look, column]
+    lon = d["LONGITUDE"][1]
+    lat = d["LATITUDE"][1]
+    Ctd(S, T, p, lon, lat)
+end
+
 
 """
 header, metadata, data = readCtdCNV(filename)
@@ -231,7 +254,7 @@ function readCtdCNV(stream::IOStream, debug::Bool=false)
     dataStart = 0
     dataNames = Vector{String}()
     metadata = Dict{String,Any}()
-    for i = 1:length(lines)
+    for i in eachindex(lines)
         line = chomp(lines[i])
         if occursin(r"^# name ", line)
             tokens = split(line)
@@ -274,7 +297,7 @@ function readCtdCNV(stream::IOStream, debug::Bool=false)
             println("reading row $(i)")
         end
         d = parse.(Float64, split(lines[i]))
-        data[irow,:] = d
+        data[irow, :] = d
         irow = irow + 1
     end
     data = DataFrame(data, dataNames)
@@ -305,8 +328,8 @@ Convert a temperature from the T48 scale to the T90 scale.
 
 See also [`T90fromT68`](@ref).
 """
-T90fromT48(T48::Float64) = (T48-4.4e-6*T48*(100.0-T48))/1.00024
-T90fromT48(T48::Vector{Float64}) = (T48.-4.4e-6.*T48.*(100.0.-T48))./1.00024
+T90fromT48(T48::Float64) = (T48 - 4.4e-6 * T48 * (100.0 - T48)) / 1.00024
+T90fromT48(T48::Vector{Float64}) = (T48 .- 4.4e-6 .* T48 .* (100.0 .- T48)) ./ 1.00024
 
 
 end # module Oceanography
