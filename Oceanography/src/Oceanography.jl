@@ -120,7 +120,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
     end
     if which == "T" || which == "CT"
         plot(which == "CT" ? CT : T, y, ylabel=ylabel,
-            yaxis=:flip, xmirror=true, legend=legend,
+            yaxis=:flip, xmirror=true, legend=legend, framestyle=:box,
             xlabel=if (abbreviate)
                 which == "CT" ? "CT[°C]" : "T [°C]"
             else
@@ -129,7 +129,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
             kwargs...)
     elseif which == "S" || which == "SA"
         plot(which == "SA" ? SA : S, y, ylabel=ylabel,
-            yaxis=:flip, xmirror=true, legend=false,
+            yaxis=:flip, xmirror=true, legend=legend, framestyle=:box,
             xlabel=if (abbreviate)
                 which == "SA" ? "SA [g/kg]" : "S"
             else
@@ -138,7 +138,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
             kwargs...)
     elseif which == "sigma0" # gsw formulation
         plot(sigma0, y, ylabel=ylabel,
-            yaxis=:flip, xmirror=true, legend=false,
+            yaxis=:flip, xmirror=true, legend=legend, framestyle=:box,
             xlabel=if abbreviate
                 "σ₀ [kg/m³]"
             else
@@ -147,7 +147,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
             kwargs...)
     elseif which == "spiciness0" # gsw formulation
         plot(gsw_spiciness0.(SA, CT), y, ylabel=ylabel,
-            yaxis=:flip, xmirror=true, legend=false,
+            yaxis=:flip, xmirror=true, legend=legend, framestyle=:box,
             xlabel=if abbreviate
                 "π [kg/m³]"
             else
@@ -195,29 +195,27 @@ function plotTS(ctd::Ctd; drawFreezing=true, legend=false, abbreviate=false, deb
         println("next is ylim (1339h)")
         println(ylim)
     end
-    #ylim = (minimum(CT), maximum(CT))
-    # Must alter ylim if drawing a freezing-point curve
+    ylim = (minimum(CT), maximum(CT))
     if drawFreezing
-        pf = 0.0
-        SAf = range(xlim[1], xlim[2], length=100)
-        saturation_fraction = 0.0
-        CTf = gsw_ct_freezing.(SAf, pf, saturation_fraction)
-        ylim[1] = minimum([minimum(CTf) minimum(CT)])
     end
     # Data
     plot(SA, CT, legend=legend,
-        xlim=(xlim[1], xlim[2]), ylim=(ylim[1], ylim[2]),
+        #xlim=(xlim[1], xlim[2]), ylim=(ylim[1], ylim[2]),
         xlabel=abbreviate ? "SA [g/kg]" : "Absolute Salinity [g/kg]",
         ylabel=abbreviate ? "C [°C]" : "Conservative Temperature [°C]";
+        framestyle=:box,
         kwargs...)
     # Density contours on 300x300 grid
     SAc = range(xlim[1], xlim[2], length=300)
     CTc = range(ylim[1], ylim[2], length=300)
-    contour!(SAc, CTc, (SAc, CTc) -> gsw_sigma0(SAc, CTc),
-        linestyle=:dot, color=:black)
-    # Finally add freezing curve, if requested
+    contour!(SAc, CTc, (SAc, CTc) -> gsw_sigma0(SAc, CTc), color=:gray, linewidth=0.5)
     if drawFreezing
-        plot!(SAf, CTf, color=:blue, linewidth=1, linestyle=:dash)
+        pf = 0.0 # let user specify this?
+        SAf = range(xlim[1], xlim[2], length=100)
+        saturation_fraction = 0.0
+        CTf = gsw_ct_freezing.(SAf, pf, saturation_fraction)
+        plot!(xlim=xlims(), ylim=ylims())
+        plot!(SAf, CTf, color=:blue, linewidth=0.5, linestyle=:dash)
     end
 end
 
