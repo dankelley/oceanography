@@ -71,7 +71,7 @@ function Ctd(salinity::Vector{Float64}, temperature::Vector{Float64}, pressure::
 end
 
 """
-    plotProfile(ctd::Ctd; which::String="CT", legend=false, debug::Bool=false, kwargs...)
+    plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=false, abbreviate=false, debug::Bool=false, kwargs...)
 
 Plot an oceanographic profile for data contained in `ctd`, showing how the
 variable named by `which` depends on pressure.  The variable is drawn on the x
@@ -96,7 +96,7 @@ more on such issues.
 
 See also [`plotTS`](@ref).
 """
-function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=false, debug::Bool=false, kwargs...)
+function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=false, abbreviate=false, debug::Bool=false, kwargs...)
     if debug
         println("in plotProfile(ctd,which=\"$(which)\")")
     end
@@ -111,32 +111,48 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
     y = ytype == "pressure" ? p : sigma0
     if ytype == "pressure"
         y = p
-        ylabel = "Pressure [dbar]"
+        ylabel = abbreviate ? "p [dbar]" : "Pressure [dbar]"
     elseif ytype == "density"
         y = sigma0
-        ylabel = "Potential Density Anomaly, σ₀ [kg/m³]"
+        ylabel = abbreviate ? "σ₀ [kg/m³]" : "Potential Density Anomaly [kg/m³]"
     else
         error("ytype must be either \"pressure\" or \"density\"")
     end
     if which == "T" || which == "CT"
         plot(which == "CT" ? CT : T, y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=legend,
-            xlabel=which == "CT" ? "Conservative Temperature [°C]" : "Temperature [°C]",
+            xlabel=if (abbreviate)
+                which == "CT" ? "CT[°C]" : "T [°C]"
+            else
+                which == "CT" ? "Conservative Temperature [°C]" : "Temperature [°C]"
+            end,
             kwargs...)
     elseif which == "S" || which == "SA"
         plot(which == "SA" ? SA : S, y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=false,
-            xlabel=which == "SA" ? "Absolute Salinity [g/kg]" : "Practical Salinity",
+            xlabel=if (abbreviate)
+                which == "SA" ? "SA [g/kg]" : "S"
+            else
+                which == "SA" ? "Absolute Salinity [g/kg]" : "Practical Salinity"
+            end,
             kwargs...)
     elseif which == "sigma0" # gsw formulation
         plot(sigma0, y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=false,
-            xlabel="Potential Density Anomaly, σ₀ [kg/m³]",
+            xlabel=if abbreviate
+                "σ₀ [kg/m³]"
+            else
+                "Potential Density Anomaly, σ₀ [kg/m³]"
+            end,
             kwargs...)
     elseif which == "spiciness0" # gsw formulation
         plot(gsw_spiciness0.(SA, CT), y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=false,
-            xlabel="Spiciness [kg/m³]",
+            xlabel=if abbreviate
+                "π [kg/m³]"
+            else
+                "Spiciness [kg/m³]"
+            end,
             kwargs...)
     else
         println("Unrecognized 'which'='$(which). Try 'T', 'CT', 'S', 'SA', 'sigma0' or 'spiciness0'.")
@@ -144,7 +160,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
 end
 
 """
-    plotTS(ctd::Ctd; drawFreezing=true, legend=false, debug::Bool=false, kwargs...,)
+    plotTS(ctd::Ctd; drawFreezing=true, legend=false, abbreviate=false, debug::Bool=false, kwargs...,)
 
 Plot an oceanographic TS diagram, with the Gibbs Seawater equation of state.
 Contours of σ₀ are shown with dotted lines.  If `drawFreezing` is true, then
@@ -161,7 +177,7 @@ more on such issues.
 
 See also [`plotProfile`](@ref).
 """
-function plotTS(ctd::Ctd; drawFreezing=true, legend=false, debug::Bool=false, kwargs...)
+function plotTS(ctd::Ctd; drawFreezing=true, legend=false, abbreviate=false, debug::Bool=false, kwargs...)
     if debug
         println("in plotTS(ctd)")
     end
@@ -191,8 +207,8 @@ function plotTS(ctd::Ctd; drawFreezing=true, legend=false, debug::Bool=false, kw
     # Data
     plot(SA, CT, legend=legend,
         xlim=(xlim[1], xlim[2]), ylim=(ylim[1], ylim[2]),
-        xlabel="Absolute Salinity [g/kg]",
-        ylabel="Conservative Temperature [°C]";
+        xlabel=abbreviate ? "SA [g/kg]" : "Absolute Salinity [g/kg]",
+        ylabel=abbreviate ? "C [°C]" : "Conservative Temperature [°C]";
         kwargs...)
     # Density contours on 300x300 grid
     SAc = range(xlim[1], xlim[2], length=300)
