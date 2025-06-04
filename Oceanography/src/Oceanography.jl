@@ -136,7 +136,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
     elseif which == "spiciness0" # gsw formulation
         plot(gsw_spiciness0.(SA, CT), y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=false,
-            xlabel="Potential Density Anomaly, σ₀ [kg/m³]",
+            xlabel="Spiciness [kg/m³]",
             kwargs...)
     else
         println("Unrecognized 'which'='$(which). Try 'T', 'CT', 'S', 'SA', 'sigma0' or 'spiciness0'.")
