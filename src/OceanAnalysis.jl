@@ -1,4 +1,4 @@
-module Oceanography
+module OceanAnalysis
 
 using NCDatasets
 using DataFrames
@@ -355,4 +355,4 @@ T90fromT48(T48::Float64) = (T48 - 4.4e-6 * T48 * (100.0 - T48)) / 1.00024
 T90fromT48(T48::Vector{Float64}) = (T48 .- 4.4e-6 .* T48 .* (100.0 .- T48)) ./ 1.00024
 
 
-end # module Oceanography
+end # module OceanAnalysis
