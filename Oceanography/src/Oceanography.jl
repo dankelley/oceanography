@@ -60,14 +60,14 @@ function coordinateFromString(s::String)
     elseif length(tokens) == 2
         return sign * (parse(Float64, tokens[1]) + parse(Float64, tokens[2]) / 60.0)
     else
-        error("malformed coordinate string $(s)")
+        error("malformed coordinate string \"$s\"")
     end
 end
 
 
 # Convenience function, defaulting to a mid-Atlantic location.
 function Ctd(salinity::Vector{Float64}, temperature::Vector{Float64}, pressure::Vector{Float64})
-    Ctd(salinity, temperature, pressure, -30.0, 30.0)
+    Ctd(salinity=salinity, temperature=temperature, pressure=pressure, longitude=-30.0, latitude=30.0)
 end
 
 """
@@ -75,13 +75,15 @@ end
 
 Plot an oceanographic profile for data contained in `ctd`, showing how the
 variable named by `which` depends on pressure.  The variable is drawn on the x
-axis and pressure on the y axis. Pressure increases downwards on the page, and
-the x axis is drawn at the top.  Allowed values of `which` are `"T"` for
-in-situ temperature, `"CT"` for Conservative Temperature, `"S"` for Practical
-Salinity, `"SA"` for Absolute Salinity, or `"sigma0"` for density anomaly
-referenced to the surface. The `seriestype` and other arguments have the same
-meaning as for general julia plots, e.g. using `seriestype=:path` joins the
-data points, and `seriestype=:scatter` shows a symbol at each point.
+axis and pressure on the y axis. Following oceanographic convention, pressure
+increases downwards on the page and the "x" axis is drawn at the top. The
+permitted values of `which` are `"T"` for in-situ temperature, `"CT"` for
+Conservative Temperature, `"S"` for Practical Salinity, `"SA"` for Absolute
+Salinity, `"sigma0"` for density anomaly referenced to the surface,in the
+TEOS10 formulation, or `"spiciness0"` for seawater spiciness referenced to the
+surface. The `seriestype` and other arguments have the same meaning as for
+general julia plots, e.g. using `seriestype=:path` joins the data points, and
+`seriestype=:scatter` shows a symbol at each point.
 
 The `kwargs...` argument is used to represent other arguments that will be sent
 to `plot()`.  For example, the default way to display the profile diagram is
@@ -94,43 +96,50 @@ more on such issues.
 
 See also [`plotTS`](@ref).
 """
-function plotProfile(ctd::Ctd; which::String="CT", legend=false, debug::Bool=false, kwargs...)
+function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=false, debug::Bool=false, kwargs...)
     if debug
         println("in plotProfile(ctd,which=\"$(which)\")")
     end
     S = ctd.salinity
     T = ctd.temperature
     p = ctd.pressure
-    if which == "SA" || which == "CT" || which == "sigma0"
-        SA = gsw_sa_from_sp.(S, p, ctd.longitude, ctd.latitude)
-        CT = gsw_ct_from_t.(SA, T, p)
-        if which == "sigma0"
-            sigma0 = gsw_sigma0.(SA, CT)
-        end
+    # computing the below is fast in Julia, so we do it here, even
+    # though I suppose someone might want to plot in-situ temperature etc.
+    SA = gsw_sa_from_sp.(S, p, ctd.longitude, ctd.latitude)
+    CT = gsw_ct_from_t.(SA, T, p)
+    sigma0 = gsw_sigma0.(SA, CT)
+    y = ytype == "pressure" ? p : sigma0
+    if ytype == "pressure"
+        y = p
+        ylabel = "Pressure [dbar]"
+    elseif ytype == "density"
+        y = sigma0
+        ylabel = "Potential Density Anomaly, σ₀ [kg/m³]"
+    else
+        error("ytype must be either \"pressure\" or \"density\"")
     end
     if which == "T" || which == "CT"
-        plot(which == "CT" ? CT : T,
-            p,
+        plot(which == "CT" ? CT : T, y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=legend,
             xlabel=which == "CT" ? "Conservative Temperature [°C]" : "Temperature [°C]",
-            ylabel="Pressure [dbar]",
             kwargs...)
     elseif which == "S" || which == "SA"
-        plot(which == "SA" ? SA : S,
-            p,
+        plot(which == "SA" ? SA : S, y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=false,
             xlabel=which == "SA" ? "Absolute Salinity [g/kg]" : "Practical Salinity",
-            ylabel="Pressure [dbar]";
             kwargs...)
     elseif which == "sigma0" # gsw formulation
-        plot(sigma0,
-            p,
+        plot(sigma0, y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=false,
             xlabel="Potential Density Anomaly, σ₀ [kg/m³]",
-            ylabel="Pressure [dbar]",
+            kwargs...)
+    elseif which == "spiciness0" # gsw formulation
+        plot(gsw_spiciness0.(SA, CT), y, ylabel=ylabel,
+            yaxis=:flip, xmirror=true, legend=false,
+            xlabel="Potential Density Anomaly, σ₀ [kg/m³]",
             kwargs...)
     else
-        println("Unrecognized 'which'='$(which). Try 'T', 'CT', 'S', 'SA' or 'sigma0'.")
+        println("Unrecognized 'which'='$(which). Try 'T', 'CT', 'S', 'SA', 'sigma0' or 'spiciness0'.")
     end
 end
 
