@@ -1,5 +1,17 @@
+name = "Oceanography"
+uuid = "0493dce0-8f3f-4935-96c1-571e92d20028"
+authors = ["dankelley <kelley.dan@gmail.com>"]
+version = "0.1.0"
+
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 GibbsSeaWater = "9a22fb26-0b63-4589-b28e-8f9d0b5c3d05"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+GibbsSeaWater = "0.1.4"
+NCDatasets = "0.14.8"
