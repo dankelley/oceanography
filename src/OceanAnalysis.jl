@@ -126,6 +126,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
             else
                 which == "CT" ? "Conservative Temperature [°C]" : "Temperature [°C]"
             end,
+            yrot=90,
             kwargs...)
     elseif which == "S" || which == "SA"
         plot(which == "SA" ? SA : S, y, ylabel=ylabel,
@@ -144,6 +145,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
             else
                 "Potential Density Anomaly, σ₀ [kg/m³]"
             end,
+            yrot=90,
             kwargs...)
     elseif which == "spiciness0" # gsw formulation
         plot(gsw_spiciness0.(SA, CT), y, ylabel=ylabel,
@@ -153,6 +155,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
             else
                 "Spiciness [kg/m³]"
             end,
+            yrot=90,
             kwargs...)
     else
         println("Unrecognized 'which'='$(which). Try 'T', 'CT', 'S', 'SA', 'sigma0' or 'spiciness0'.")
@@ -160,7 +163,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
 end
 
 """
-    plotTS(ctd::Ctd; drawFreezing=true, legend=false, abbreviate=false, debug::Bool=false, kwargs...,)
+    plotTS(ctd::Ctd; drawFreezing=true, drawSpiciness=false, legend=false, abbreviate=false, debug=false, kwargs...,)
 
 Plot an oceanographic TS diagram, with the Gibbs Seawater equation of state.
 Contours of σ₀ are shown with dotted lines.  If `drawFreezing` is true, then
@@ -177,7 +180,7 @@ more on such issues.
 
 See also [`plotProfile`](@ref).
 """
-function plotTS(ctd::Ctd; drawFreezing=true, legend=false, abbreviate=false, debug::Bool=false, kwargs...)
+function plotTS(ctd::Ctd; drawFreezing=true, drawSpiciness=false, legend=false, abbreviate=false, debug::Bool=false, kwargs...)
     if debug
         println("in plotTS(ctd)")
     end
@@ -186,35 +189,32 @@ function plotTS(ctd::Ctd; drawFreezing=true, legend=false, abbreviate=false, deb
     p = ctd.pressure
     SA = gsw_sa_from_sp.(S, p, ctd.longitude, ctd.latitude)
     CT = gsw_ct_from_t.(SA, T, p)
-    xlim = [minimum(SA) maximum(SA)]
-    #xlim = (minimum(SA), maximum(SA))
-    ylim = [minimum(CT) maximum(CT)]
-    if debug
-        println("next is xlim (1339h)")
-        println(xlim)
-        println("next is ylim (1339h)")
-        println(ylim)
-    end
-    ylim = (minimum(CT), maximum(CT))
-    if drawFreezing
-    end
-    # Data
+    # We start with the measurements ... 
     plot(SA, CT, legend=legend,
-        #xlim=(xlim[1], xlim[2]), ylim=(ylim[1], ylim[2]),
         xlabel=abbreviate ? "SA [g/kg]" : "Absolute Salinity [g/kg]",
         ylabel=abbreviate ? "C [°C]" : "Conservative Temperature [°C]";
-        framestyle=:box,
-        kwargs...)
-    # Density contours on 300x300 grid
+        framestyle=:box, yrot=90, kwargs...)
+    # ... then add density contours ...
+    xlim = xlims()
+    ylim = ylims()
     SAc = range(xlim[1], xlim[2], length=300)
     CTc = range(ylim[1], ylim[2], length=300)
-    contour!(SAc, CTc, (SAc, CTc) -> gsw_sigma0(SAc, CTc), color=:gray, linewidth=0.5)
+    contour!(SAc, CTc, (SAc, CTc) -> gsw_sigma0(SAc, CTc), color=:gray, linewidth=0.5,
+        levels=range(22, 30, step=0.1),
+        cbar=false, clabels=true)
+    # ... then (optionally) add spiciness contours ...
+    if drawSpiciness
+        contour!(SAc, CTc, (SAc, CTc) -> gsw_spiciness0(SAc, CTc), color=:gray, linewidth=0.5,
+            levels=range(-10, 10, step=0.1),
+            cbar=false, clabels=true)
+    end
+    # ... and finally (optionally) add a freezing-temperature line.
     if drawFreezing
         pf = 0.0 # let user specify this?
         SAf = range(xlim[1], xlim[2], length=100)
         saturation_fraction = 0.0
         CTf = gsw_ct_freezing.(SAf, pf, saturation_fraction)
-        plot!(xlim=xlims(), ylim=ylims())
+        plot!(xlim=xlim, ylim=ylim)
         plot!(SAf, CTf, color=:blue, linewidth=0.5, linestyle=:dash)
     end
 end
