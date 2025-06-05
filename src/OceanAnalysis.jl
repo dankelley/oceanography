@@ -71,7 +71,7 @@ function Ctd(salinity::Vector{Float64}, temperature::Vector{Float64}, pressure::
 end
 
 """
-    plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=false, abbreviate=false, debug::Bool=false, kwargs...)
+    plotProfile(ctd::Ctd; which::String="CT", vertical="pressure", legend=false, abbreviate=false, debug::Bool=false, kwargs...)
 
 Plot an oceanographic profile for data contained in `ctd`, showing how the
 variable named by `which` depends on pressure.  The variable is drawn on the x
@@ -89,34 +89,35 @@ The `kwargs...` argument is used to represent other arguments that will be sent
 to `plot()`.  For example, the default way to display the profile diagram is
 constructed with a blue line connecting points, but using e.g.
 
-    plotProfile(ctd, seriestype=:scatter, seriescolor=:red)
+    plotProfile(ctd, which="SA", seriestype=:scatter, seriescolor=:red)
 
 will use red-filled circles, instead; see https://docs.juliaplots.org/stable/ for
 more on such issues.
 
 See also [`plotTS`](@ref).
 """
-function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=false, abbreviate=false, debug::Bool=false, kwargs...)
+function plotProfile(ctd::Ctd; which::String="CT", vertical="pressure", legend=false, abbreviate=false, debug::Bool=false, kwargs...)
     if debug
-        println("in plotProfile(ctd,which=\"$(which)\")")
+        println("in plotProfile(ctd,which=\"$which\")")
     end
     S = ctd.salinity
     T = ctd.temperature
     p = ctd.pressure
-    # computing the below is fast in Julia, so we do it here, even
-    # though I suppose someone might want to plot in-situ temperature etc.
+    # Computing things as below is fast in Julia, so we do it even if the user
+    # doesn't actually want SA or the other TEOS-10 variable.  And, I think in
+    # many cases, the user *will* want those TEOS-10 things.
     SA = gsw_sa_from_sp.(S, p, ctd.longitude, ctd.latitude)
     CT = gsw_ct_from_t.(SA, T, p)
     sigma0 = gsw_sigma0.(SA, CT)
-    y = ytype == "pressure" ? p : sigma0
-    if ytype == "pressure"
+    y = vertical == "pressure" ? p : sigma0
+    if vertical == "pressure"
         y = p
         ylabel = abbreviate ? "p [dbar]" : "Pressure [dbar]"
-    elseif ytype == "density"
+    elseif vertical == "density"
         y = sigma0
         ylabel = abbreviate ? "σ₀ [kg/m³]" : "Potential Density Anomaly [kg/m³]"
     else
-        error("ytype must be either \"pressure\" or \"density\"")
+        error("vertical must be either \"pressure\" or \"density\"")
     end
     if which == "T" || which == "CT"
         plot(which == "CT" ? CT : T, y, ylabel=ylabel,
@@ -126,8 +127,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
             else
                 which == "CT" ? "Conservative Temperature [°C]" : "Temperature [°C]"
             end,
-            yrot=90,
-            kwargs...)
+            yrot=90; kwargs...)
     elseif which == "S" || which == "SA"
         plot(which == "SA" ? SA : S, y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=legend, framestyle=:box,
@@ -136,7 +136,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
             else
                 which == "SA" ? "Absolute Salinity [g/kg]" : "Practical Salinity"
             end,
-            kwargs...)
+            yrot=90; kwargs...)
     elseif which == "sigma0" # gsw formulation
         plot(sigma0, y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=legend, framestyle=:box,
@@ -145,8 +145,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
             else
                 "Potential Density Anomaly, σ₀ [kg/m³]"
             end,
-            yrot=90,
-            kwargs...)
+            yrot=90; kwargs...)
     elseif which == "spiciness0" # gsw formulation
         plot(gsw_spiciness0.(SA, CT), y, ylabel=ylabel,
             yaxis=:flip, xmirror=true, legend=legend, framestyle=:box,
@@ -155,8 +154,7 @@ function plotProfile(ctd::Ctd; which::String="CT", ytype="pressure", legend=fals
             else
                 "Spiciness [kg/m³]"
             end,
-            yrot=90,
-            kwargs...)
+            yrot=90; kwargs...)
     else
         println("Unrecognized 'which'='$(which). Try 'T', 'CT', 'S', 'SA', 'sigma0' or 'spiciness0'.")
     end
@@ -192,8 +190,8 @@ function plotTS(ctd::Ctd; drawFreezing=true, drawSpiciness=false, legend=false, 
     # We start with the measurements ... 
     plot(SA, CT, legend=legend,
         xlabel=abbreviate ? "SA [g/kg]" : "Absolute Salinity [g/kg]",
-        ylabel=abbreviate ? "C [°C]" : "Conservative Temperature [°C]";
-        framestyle=:box, yrot=90, kwargs...)
+        ylabel=abbreviate ? "C [°C]" : "Conservative Temperature [°C]",
+        framestyle=:box, yrot=90; kwargs...)
     # ... then add density contours ...
     xlim = xlims()
     ylim = ylims()
