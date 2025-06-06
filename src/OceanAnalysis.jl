@@ -13,6 +13,7 @@ export Ctd
 
 # Functions
 export coordinateFromString
+export getElement
 export plotProfile
 export plotTS
 export readArgo
@@ -351,6 +352,43 @@ See also [`T90fromT68`](@ref).
 """
 T90fromT48(T48::Float64) = (T48 - 4.4e-6 * T48 * (100.0 - T48)) / 1.00024
 T90fromT48(T48::Vector{Float64}) = (T48 .- 4.4e-6 .* T48 .* (100.0 .- T48)) ./ 1.00024
+
+# %%
+"""
+    getElement(ctd, string)
+"""
+function getElement(o::Ctd, name::String)
+    if name == "salinity"
+        return o.salinity
+    elseif name == "temperature"
+        return o.temperature
+    elseif name == "pressure"
+        return o.pressure
+    elseif name == "longitude"
+        return o.longitude
+    elseif name == "latitude"
+        return o.latitude
+    end
+    SP = o.salinity
+    T = o.temperature
+    p = o.pressure
+    lon = o.longitude
+    lat = o.latitude
+    SA = gsw_sa_from_sp.(SP, p, lon, lat)
+    CT = gsw_ct_from_t.(SA, T, p)
+    # it is likely a TEOS10 item
+    if name == "SA"
+        return (SA)
+    elseif name == "CT"
+        return (CT)
+    elseif name == "spiciness0"
+        return (gsw_spiciness0.(SA, CT))
+    elseif name == "sigma0"
+        return (gsw_sigma0.(SA, CT))
+    else
+        error("cannot look up $name")
+    end
+end
 
 
 end # module OceanAnalysis
