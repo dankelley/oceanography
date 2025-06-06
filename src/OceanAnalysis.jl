@@ -29,6 +29,10 @@ struct Ctd <: Oce
     pressure::Vector{Float64}
     longitude::Float64
     latitude::Float64
+    SA::Vector{Float64}
+    CT::Vector{Float64}
+    sigma0::Vector{Float64}
+    spiciness0::Vector{Float64}
 end
 
 #.struct Argo <: Ctd
@@ -66,9 +70,13 @@ function coordinateFromString(s::String)
 end
 
 
-# Convenience function, defaulting to a mid-Atlantic location.
-function Ctd(salinity::Vector{Float64}, temperature::Vector{Float64}, pressure::Vector{Float64})
-    Ctd(salinity=salinity, temperature=temperature, pressure=pressure, longitude=-30.0, latitude=30.0)
+# Convenience function, which carries out TEOS-10 computations
+function Ctd(salinity::Vector{Float64}, temperature::Vector{Float64}, pressure::Vector{Float64}, longitude::Float64=-30, latitude::Float64=30)
+    SA = gsw_sa_from_sp.(salinity, pressure, longitude, latitude)
+    CT = gsw_ct_from_t.(SA, temperature, pressure)
+    spiciness0 = gsw_spiciness0.(SA, CT)
+    sigma0 = gsw_sigma0.(SA, CT)
+    Ctd(salinity, temperature, pressure, longitude, latitude, SA, CT, sigma0, spiciness0)
 end
 
 """
@@ -199,12 +207,12 @@ function plotTS(ctd::Ctd; drawFreezing=true, drawSpiciness=false, legend=false, 
     SAc = range(xlim[1], xlim[2], length=300)
     CTc = range(ylim[1], ylim[2], length=300)
     contour!(SAc, CTc, (SAc, CTc) -> gsw_sigma0(SAc, CTc), color=:gray, linewidth=0.5,
-        levels=range(22, 30, step=0.1),
+        levels=range(22, 30, step=0.2),
         cbar=false, clabels=true)
     # ... then (optionally) add spiciness contours ...
     if drawSpiciness
         contour!(SAc, CTc, (SAc, CTc) -> gsw_spiciness0(SAc, CTc), color=:gray, linewidth=0.5,
-            levels=range(-10, 10, step=0.1),
+            levels=range(-10, 10, step=0.2),
             cbar=false, clabels=true)
     end
     # ... and finally (optionally) add a freezing-temperature line.
@@ -227,11 +235,11 @@ function readArgo(filename, column=1, pmax=10000)
     d = NCDataset(filename, "r")
     p = d["PRES"][:, column]
     look = p .< pmax
-    p = p[look]
-    S = d["PSAL"][look, column]
-    T = d["TEMP"][look, column]
-    lon = d["LONGITUDE"][1]
-    lat = d["LATITUDE"][1]
+    p = convert(Vector{Float64}, p[look])
+    S = convert(Vector{Float64}, d["PSAL"][look, column])
+    T = convert(Vector{Float64}, d["TEMP"][look, column])
+    lon = convert(Float64, d["LONGITUDE"][1])
+    lat = convert(Float64, d["LATITUDE"][1])
     Ctd(S, T, p, lon, lat)
 end
 
