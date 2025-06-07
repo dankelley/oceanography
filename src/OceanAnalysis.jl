@@ -229,7 +229,22 @@ end
 """
 argo = readArgo(filename, column=1, pmax=10000)
 
-FIXME: document, likely alter code (pmax maybe missing as default); read other vars
+FIXME: when code is stablized (requires real-world testing), write more
+docs here.
+
+# Examples
+```julia-repl
+using OceanAnalysis, Plots
+# Read a file (which only exists on author's machine) and plot
+# a profile of Absolute Salinity in black ink, with superimposed
+# Practical Salinity in red ink.
+argo_file = "/Users/kelley/data/argo/D4902911_095.nc"
+if isfile(argo_file)
+    d = readArgo(argo_file)
+    plotProfile(d, which="SA", seriescolor=:black)
+    plot!(d.salinity, d.pressure, seriescolor=:red)
+end
+```
 """
 function readArgo(filename, column=1, pmax=10000)
     d = NCDataset(filename, "r")
